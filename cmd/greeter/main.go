@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/alanchchen/go-project-skeleton/pkg/app"
 )
 
@@ -26,11 +24,11 @@ var cfgFile string
 var logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
 
 // rootCmd is the root command
-var rootCmd = &cobra.Command{
+var rootCmd = &app.Command{
 	Use:   appName,
 	Short: appName + " is an RPC server",
 	Long:  appName + " is an RPC server",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *app.Command, args []string) error {
 		initializers := []interface{}{
 			// actors
 			app.NewGRPCServerActor,

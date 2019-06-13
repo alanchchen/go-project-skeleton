@@ -7,7 +7,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/spf13/cobra"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
 	"github.com/alanchchen/go-project-skeleton/pkg/app"
@@ -17,11 +16,11 @@ func init() {
 	rootCmd.AddCommand(listUsersCommand)
 }
 
-var listUsersCommand = &cobra.Command{
+var listUsersCommand = &app.Command{
 	Use:   "list",
 	Short: "list all users",
 	Long:  "list all users",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *app.Command, args []string) error {
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,

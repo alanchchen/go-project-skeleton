@@ -12,7 +12,6 @@ import (
 
 type Runner struct {
 	container *dig.Container
-	runGroup  *run.Group
 	config    *viper.Viper
 }
 
@@ -22,8 +21,9 @@ func Run(app *cobra.Command, args []string, initializers ...interface{}) error {
 		return err
 	}
 
-	runGroup := runner.runGroup
 	runnable := func(r ActorsResult) error {
+		runGroup := run.Group{}
+
 		for _, actor := range r.Actors {
 			runGroup.Add(actor.Run, actor.Interrupt)
 		}
@@ -51,7 +51,6 @@ func RunCustom(app *cobra.Command, args []string, runnable interface{}, initiali
 func newRunner(app *cobra.Command, args []string) (*Runner, error) {
 	r := &Runner{
 		container: dig.New(),
-		runGroup:  &run.Group{},
 		config:    viper.New(),
 	}
 
@@ -65,7 +64,7 @@ func newRunner(app *cobra.Command, args []string) (*Runner, error) {
 func (r *Runner) execute(runnable interface{}, initializers ...interface{}) error {
 	container := r.container
 
-	initializers = append(initializers, func() *viper.Viper {
+	initializers = append(initializers, func() *Config {
 		return r.config
 	})
 
@@ -184,7 +183,7 @@ func (r *Runner) bindContainer() error {
 	return nil
 }
 
-func bindFlags(cmd *cobra.Command, cfg *viper.Viper) error {
+func bindFlags(cmd *cobra.Command, cfg *Config) error {
 	if err := cfg.BindPFlags(cmd.Flags()); err != nil {
 		return err
 	}

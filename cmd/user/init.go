@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"net"
 
-	"go.uber.org/dig"
 	"google.golang.org/grpc"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
+	"github.com/alanchchen/go-project-skeleton/pkg/app"
 )
 
 type EndpointConfig struct {
-	dig.In
+	app.Input
 
 	Host string `name:"api.host"`
 	Port int    `name:"api.port"`
