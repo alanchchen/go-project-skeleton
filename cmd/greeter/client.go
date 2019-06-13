@@ -24,13 +24,8 @@ var clientCmd = &cobra.Command{
 	Short: "client is a greeter client",
 	Long:  "client is a greeter client",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runner := app.NewRunner()
-		if err := runner.BindCobraCommand(cmd, args...); err != nil {
-			return err
-		}
-
-		return runner.RunCustom(func(cfg *viper.Viper) error {
-			conn, err := grpc.Dial(APIEndpoint(cfg), grpc.WithInsecure())
+		return app.RunCustom(cmd, args, func(cfg EndpointConfig) error {
+			conn, err := grpc.Dial(cfg.Endpoint(), grpc.WithInsecure())
 			if err != nil {
 				return err
 			}

@@ -25,17 +25,12 @@ var findUserCommand = &cobra.Command{
 	Short: "finds an new user by ID or name",
 	Long:  "finds an new user by ID or name",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runner := app.NewRunner()
-		if err := runner.BindCobraCommand(cmd, args...); err != nil {
-			return err
-		}
-
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		return runner.RunCustom(func(client user.ServiceClient, cfg *viper.Viper) error {
+		return app.RunCustom(cmd, args, func(client user.ServiceClient, cfg *viper.Viper) error {
 			var resp *user.Users
 			var err error
 

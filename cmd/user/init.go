@@ -4,26 +4,33 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/spf13/viper"
+	"go.uber.org/dig"
 	"google.golang.org/grpc"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
 )
 
-func NewConnection(cfg *viper.Viper) (*grpc.ClientConn, error) {
-	return grpc.Dial(APIEndpoint(cfg), grpc.WithInsecure())
+type EndpointConfig struct {
+	dig.In
+
+	Host string `name:"api.host"`
+	Port int    `name:"api.port"`
+}
+
+func (cfg EndpointConfig) Endpoint() string {
+	return net.JoinHostPort(cfg.Host, fmt.Sprintf("%d", cfg.Port))
+}
+
+func NewConnection(cfg EndpointConfig) (*grpc.ClientConn, error) {
+	return grpc.Dial(cfg.Endpoint(), grpc.WithInsecure())
 }
 
 func NewClient(conn *grpc.ClientConn) user.ServiceClient {
 	return user.NewServiceClient(conn)
 }
 
-func NewTCPSocket(cfg *viper.Viper) (net.Listener, error) {
-	return net.Listen("tcp", APIEndpoint(cfg))
-}
-
-func APIEndpoint(cfg *viper.Viper) string {
-	return fmt.Sprintf("%s:%d", cfg.GetString("api.host"), cfg.GetInt("api.port"))
+func NewTCPSocket(cfg EndpointConfig) (net.Listener, error) {
+	return net.Listen("tcp", cfg.Endpoint())
 }
 
 func NewRPCServer() *grpc.Server {
