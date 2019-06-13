@@ -8,9 +8,9 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
-	"go.uber.org/dig"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
+	"github.com/alanchchen/go-project-skeleton/pkg/app"
 )
 
 func init() {
@@ -22,21 +22,17 @@ var listUsersCommand = &cobra.Command{
 	Short: "list all users",
 	Long:  "list all users",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		container := dig.New()
+		runner := app.NewRunner()
+		if err := runner.BindCobraCommand(cmd, args...); err != nil {
+			return err
+		}
 
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		for _, initFn := range initializers {
-			if err := container.Provide(initFn); err != nil {
-				return err
-			}
-		}
-
-		// Invoke actors
-		return container.Invoke(func(client user.ServiceClient) error {
+		return runner.RunCustom(func(client user.ServiceClient) error {
 			resp, err := client.ListUsers(context.Background(), &empty.Empty{})
 			if err != nil {
 				return err
@@ -50,6 +46,6 @@ var listUsersCommand = &cobra.Command{
 			fmt.Println(string(rawData))
 
 			return nil
-		})
+		}, initializers...)
 	},
 }

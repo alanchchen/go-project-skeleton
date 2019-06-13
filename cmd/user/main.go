@@ -6,11 +6,8 @@ import (
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/oklog/run"
 	"github.com/spf13/cobra"
-	"go.uber.org/dig"
 
-	"github.com/alanchchen/go-project-skeleton/cmd"
 	"github.com/alanchchen/go-project-skeleton/pkg/app"
 )
 
@@ -31,20 +28,21 @@ var logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
 
 // rootCmd is the root command
 var rootCmd = &cobra.Command{
-	Use:               appName,
-	Short:             appName + " is an RPC server",
-	Long:              appName + " is an RPC server",
-	PersistentPreRunE: cmd.InitViper,
+	Use:   appName,
+	Short: appName + " is an RPC server",
+	Long:  appName + " is an RPC server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		container := dig.New()
+		runner := app.NewRunner()
+		if err := runner.BindCobraCommand(cmd, args...); err != nil {
+			return err
+		}
 
 		initializers := []interface{}{
 			// actors
-			app.NewRPCServerActor,
+			app.NewGRPCServerActor,
 			app.NewSignalActor,
 
 			// actors' dependencies
-			NewRunGroup,
 			NewRPCServer,
 			NewTCPSocket,
 			func() app.Logger {
@@ -52,25 +50,7 @@ var rootCmd = &cobra.Command{
 			},
 		}
 
-		for _, initFn := range initializers {
-			if err := container.Provide(initFn); err != nil {
-				return err
-			}
-		}
-
-		// Invoke actors
-		return container.Invoke(func(runGroup *run.Group, r app.ActorsResult) error {
-			for _, actor := range r.Actors {
-				runGroup.Add(actor.Run, actor.Interrupt)
-			}
-
-			// Run blocks until all the actors return. In the normal case, that’ll be when someone hits ctrl-C,
-			// triggering the signal handler. If something breaks, its error will be propegated through. In all
-			// cases, the first returned error triggers the interrupt function for all actors. And in this way,
-			// we can reliably and coherently ensure that every goroutine that’s Added to the group is stopped,
-			// when Run returns.
-			return runGroup.Run()
-		})
+		return runner.Run(initializers...)
 	},
 }
 

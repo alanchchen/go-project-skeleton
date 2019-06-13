@@ -8,9 +8,9 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/dig"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
+	"github.com/alanchchen/go-project-skeleton/pkg/app"
 )
 
 func init() {
@@ -25,30 +25,26 @@ var findUserCommand = &cobra.Command{
 	Short: "finds an new user by ID or name",
 	Long:  "finds an new user by ID or name",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		container := dig.New()
+		runner := app.NewRunner()
+		if err := runner.BindCobraCommand(cmd, args...); err != nil {
+			return err
+		}
 
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		for _, initFn := range initializers {
-			if err := container.Provide(initFn); err != nil {
-				return err
-			}
-		}
-
-		// Invoke actors
-		return container.Invoke(func(client user.ServiceClient) error {
+		return runner.RunCustom(func(client user.ServiceClient, cfg *viper.Viper) error {
 			var resp *user.Users
 			var err error
 
-			if name := viper.GetString("name"); name != "" {
+			if name := cfg.GetString("name"); name != "" {
 				resp, err = client.FindUserByName(context.Background(), &user.FindUserByNameRequest{
 					Name: name,
 				})
 			}
-			if id := viper.GetInt64("id"); id >= 0 {
+			if id := cfg.GetInt64("id"); id >= 0 {
 				resp, err = client.FindUserById(context.Background(), &user.FindUserByIdRequest{
 					Id: id,
 				})
@@ -66,6 +62,6 @@ var findUserCommand = &cobra.Command{
 			fmt.Println(string(rawData))
 
 			return nil
-		})
+		}, initializers...)
 	},
 }
