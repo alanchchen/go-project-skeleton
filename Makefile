@@ -69,21 +69,14 @@ $(GOBIN_DIR)/%: $(GOBIN_DIR) FORCE
 
 include $(wildcard build/*.mk)
 
-PROTOC_INCLUDES_DIR += \
-	-I$(GOPATH)/src
+CODEGEN_DEPS := \
+	$(GOTOOLS_DIR)/mockgen \
+	$(GOTOOLS_DIR)/protoc-gen-go \
+	$(PROTOC)
 
-define gen-grpc
-$(PROTOC) $(PROTOC_INCLUDES_DIR) --go_out=plugins=grpc:$(GOPATH)/src $(1)
-endef
-
-.PHONY: api-gen
-api-gen: $(PROTOC) $(GOTOOLS_DIR)/protoc-gen-go
-	$(Q)for api in $(call find-subdir,pkg/api); do \
-		$(call gen-grpc,$(addprefix $(CURDIR)/,$$api/*.proto)); done
-
-.PHONY: mock-gen
-mock-gen: $(GOTOOLS_DIR)/mockgen
-	$(Q)go generate ./...
+.PHONY: gen
+gen: $(CODEGEN_DEPS)
+	$(Q)go generate -x ./...
 
 dockers: $(addsuffix -docker,$(APPS))
 %-docker:
@@ -115,8 +108,7 @@ help:
 		printf "* %s\n" $$app; done
 	@echo  ''
 	@echo  'Code generation targets:'
-	@echo  '  api-gen                     - Generate API code from .proto files'
-	@echo  '  mock-gen                    - Generate mock files from Go interfaces'
+	@echo  '  gen                         - Generate API code from .proto files and mocks'
 	@echo  ''
 	@echo  'Docker targets:'
 	@echo  '  dockers                     - Build docker images marked with [*]'

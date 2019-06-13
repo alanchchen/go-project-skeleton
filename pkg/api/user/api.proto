@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package user;
-option go_package = "github.com/alanchchen/go-project-skeleton/pkg/api/user;user";
+option go_package = "user";
 
 import "google/protobuf/empty.proto";
 
