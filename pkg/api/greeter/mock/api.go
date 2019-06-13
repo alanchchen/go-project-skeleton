@@ -5,9 +5,9 @@
 package mock
 
 import (
+	context "context"
 	greeter "github.com/alanchchen/go-project-skeleton/pkg/api/greeter"
 	gomock "github.com/golang/mock/gomock"
-	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
 )
