@@ -129,9 +129,6 @@ help:
 		printf "* %-20s        - Push %s\n" $$app-docker-push $(call app-docker-image-name,$$app); done
 	@echo  '  docker-push                 - Push $(DOCKER_REPOSITORY):$(REV)'
 	@echo  ''
-	@echo  'Dependency management targets:'
-	@echo  '  deps                        - Run dep ensure to update dependencies'
-	@echo  ''
 	@echo  'Test targets:'
 	@echo  '  test                        - Run all tests'
 	@echo  ''
