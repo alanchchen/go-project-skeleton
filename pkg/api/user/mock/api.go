@@ -5,10 +5,10 @@
 package mock
 
 import (
-	context "context"
 	user "github.com/alanchchen/go-project-skeleton/pkg/api/user"
 	gomock "github.com/golang/mock/gomock"
 	empty "github.com/golang/protobuf/ptypes/empty"
+	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
 )
