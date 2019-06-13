@@ -22,17 +22,12 @@ var listUsersCommand = &cobra.Command{
 	Short: "list all users",
 	Long:  "list all users",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runner := app.NewRunner()
-		if err := runner.BindCobraCommand(cmd, args...); err != nil {
-			return err
-		}
-
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		return runner.RunCustom(func(client user.ServiceClient) error {
+		return app.RunCustom(cmd, args, func(client user.ServiceClient) error {
 			resp, err := client.ListUsers(context.Background(), &empty.Empty{})
 			if err != nil {
 				return err

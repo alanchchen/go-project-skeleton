@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/oklog/run"
 	"github.com/spf13/cobra"
@@ -15,17 +16,13 @@ type Runner struct {
 	config    *viper.Viper
 }
 
-func NewRunner() *Runner {
-	return &Runner{
-		container: dig.New(),
-		runGroup:  &run.Group{},
-		config:    viper.New(),
+func Run(app *cobra.Command, args []string, initializers ...interface{}) error {
+	runner, err := newRunner(app, args)
+	if err != nil {
+		return err
 	}
-}
 
-func (r *Runner) Run(initializers ...interface{}) error {
-	runGroup := r.runGroup
-
+	runGroup := runner.runGroup
 	runnable := func(r ActorsResult) error {
 		for _, actor := range r.Actors {
 			runGroup.Add(actor.Run, actor.Interrupt)
@@ -39,10 +36,33 @@ func (r *Runner) Run(initializers ...interface{}) error {
 		return runGroup.Run()
 	}
 
-	return r.RunCustom(runnable, initializers...)
+	return runner.execute(runnable, initializers...)
 }
 
-func (r *Runner) RunCustom(runnable interface{}, initializers ...interface{}) error {
+func RunCustom(app *cobra.Command, args []string, runnable interface{}, initializers ...interface{}) error {
+	runner, err := newRunner(app, args)
+	if err != nil {
+		return err
+	}
+
+	return runner.execute(runnable, initializers...)
+}
+
+func newRunner(app *cobra.Command, args []string) (*Runner, error) {
+	r := &Runner{
+		container: dig.New(),
+		runGroup:  &run.Group{},
+		config:    viper.New(),
+	}
+
+	if err := r.bindCobraCommand(app, args); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+func (r *Runner) execute(runnable interface{}, initializers ...interface{}) error {
 	container := r.container
 
 	initializers = append(initializers, func() *viper.Viper {
@@ -59,7 +79,7 @@ func (r *Runner) RunCustom(runnable interface{}, initializers ...interface{}) er
 	return container.Invoke(runnable)
 }
 
-func (r *Runner) BindCobraCommand(app *cobra.Command, args ...string) (err error) {
+func (r *Runner) bindCobraCommand(app *cobra.Command, args []string) (err error) {
 	cfg := r.config
 	appName := app.Use
 	var cfgFile string
@@ -88,9 +108,79 @@ func (r *Runner) BindCobraCommand(app *cobra.Command, args ...string) (err error
 	// If a config file is found, read it.
 	if err = cfg.ReadInConfig(); err == nil {
 		app.Println("Using config file:", cfg.ConfigFileUsed())
+		// Ignore the error if config file is not found
 	}
 
-	// Ignore the error if config file is not found
+	return r.bindContainer()
+}
+
+func (r *Runner) bindContainer() error {
+	cfg := r.config
+	container := r.container
+
+	for _, key := range cfg.AllKeys() {
+		k := key
+		val := cfg.Get(k)
+
+		var getter interface{}
+		switch val.(type) {
+		case bool:
+			getter = func() bool {
+				return cfg.GetBool(k)
+			}
+		case int:
+			getter = func() int {
+				return cfg.GetInt(k)
+			}
+		case int32:
+			getter = func() int32 {
+				return cfg.GetInt32(k)
+			}
+		case int64:
+			getter = func() int64 {
+				return cfg.GetInt64(k)
+			}
+		case float64:
+			getter = func() float64 {
+				return cfg.GetFloat64(k)
+			}
+		case string:
+			getter = func() string {
+				return cfg.GetString(k)
+			}
+		case []string:
+			getter = func() []string {
+				return cfg.GetStringSlice(k)
+			}
+		case map[string]string:
+			getter = func() map[string]string {
+				return cfg.GetStringMapString(k)
+			}
+		case map[string][]string:
+			getter = func() map[string][]string {
+				return cfg.GetStringMapStringSlice(k)
+			}
+		case map[string]interface{}:
+			getter = func() map[string]interface{} {
+				return cfg.GetStringMap(k)
+			}
+		case time.Time:
+			getter = func() time.Time {
+				return cfg.GetTime(k)
+			}
+		case time.Duration:
+			getter = func() time.Duration {
+				return cfg.GetDuration(k)
+			}
+		default:
+			continue
+		}
+
+		if err := container.Provide(getter, dig.Name(k)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

@@ -24,17 +24,12 @@ var addUserCommand = &cobra.Command{
 	Short: "adds an new user",
 	Long:  "adds an new user",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runner := app.NewRunner()
-		if err := runner.BindCobraCommand(cmd, args...); err != nil {
-			return err
-		}
-
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		return runner.RunCustom(func(client user.ServiceClient, cfg *viper.Viper) error {
+		return app.RunCustom(cmd, args, func(client user.ServiceClient, cfg *viper.Viper) error {
 			resp, err := client.AddUser(context.Background(), &user.AddUserRequest{
 				Name: cfg.GetString("name"),
 			})

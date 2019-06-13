@@ -31,11 +31,6 @@ var rootCmd = &cobra.Command{
 	Short: appName + " is an RPC server",
 	Long:  appName + " is an RPC server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runner := app.NewRunner()
-		if err := runner.BindCobraCommand(cmd, args...); err != nil {
-			return err
-		}
-
 		initializers := []interface{}{
 			// actors
 			app.NewGRPCServerActor,
@@ -49,7 +44,7 @@ var rootCmd = &cobra.Command{
 			},
 		}
 
-		return runner.Run(initializers...)
+		return app.Run(cmd, args, initializers...)
 	},
 }
 

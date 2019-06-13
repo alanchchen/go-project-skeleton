@@ -4,18 +4,25 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/spf13/viper"
+	"go.uber.org/dig"
 	"google.golang.org/grpc"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/greeter"
 )
 
-func NewTCPSocket(cfg *viper.Viper) (net.Listener, error) {
-	return net.Listen("tcp", APIEndpoint(cfg))
+type EndpointConfig struct {
+	dig.In
+
+	Host string `name:"api.host"`
+	Port int    `name:"api.port"`
 }
 
-func APIEndpoint(cfg *viper.Viper) string {
-	return fmt.Sprintf("%s:%d", cfg.GetString("api.host"), cfg.GetInt("api.port"))
+func (cfg EndpointConfig) Endpoint() string {
+	return net.JoinHostPort(cfg.Host, fmt.Sprintf("%d", cfg.Port))
+}
+
+func NewTCPSocket(cfg EndpointConfig) (net.Listener, error) {
+	return net.Listen("tcp", cfg.Endpoint())
 }
 
 func NewRPCServer() *grpc.Server {
