@@ -50,16 +50,12 @@ $(shell find $(1) -maxdepth 1 -mindepth 1 -type d -o -type l)
 endef
 
 APPS := $(sort $(notdir $(call find-subdir,cmd)))
-GOTOOLS := $(sort $(notdir $(call find-subdir,tools)))
 PHONY += $(APPS)
 
 all: $(APPS)
 
 .SECONDEXPANSION:
 $(APPS): $(addprefix $(GOBIN_DIR)/,$$@)
-
-.SECONDEXPANSION:
-$(GOTOOLS): $(addprefix $(HOSTBIN_DIR)/,$$@)
 
 $(DIRS) :
 	$(Q)mkdir -p $@
@@ -68,9 +64,6 @@ $(GOBIN_DIR)/%: $(GOBIN_DIR) FORCE
 	$(Q)go build -o $@ ./cmd/$(notdir $@)
 	@echo "Done building."
 	@echo "Run \"$(subst $(CURDIR),.,$@)\" to launch $(notdir $@)."
-
-$(GOTOOLSBIN_DIR)/%: $(GOTOOLSBIN_DIR) FORCE
-	$(Q)go build -o $@ ./tools/$(notdir $@)
 
 include $(wildcard build/*.mk)
 
@@ -81,18 +74,20 @@ define gen-grpc
 $(PROTOC) $(PROTOC_INCLUDES_DIR) --go_out=plugins=grpc:$(GOPATH)/src $(1)
 endef
 
+protoc-gen-go:
+	$(Q)go get github.com/golang/protobuf/protoc-gen-go@v1.2.0
+
 .PHONY: api-gen
 api-gen: $(PROTOC) protoc-gen-go
 	$(Q)for api in $(call find-subdir,pkg/api); do \
 		$(call gen-grpc,$(addprefix $(CURDIR)/,$$api/*.proto)); done
 
-MOCKGEN := $(HOSTBIN_DIR)/mockgen
-.PHONY: mock-gen
-mock-gen: $(MOCKGEN)
-	$(Q)go generate ./...
+mockgen:
+	$(Q)go get github.com/golang/mock/mockgen@v1.3.1
 
-deps: $(HOSTBIN_DIR)/dep
-	$(Q)dep ensure
+.PHONY: mock-gen
+mock-gen: mockgen
+	$(Q)go generate ./...
 
 dockers: $(addsuffix -docker,$(APPS))
 %-docker:
@@ -114,7 +109,7 @@ test:
 	$(Q)go test -v ./...
 
 clean:
-	$(Q)rm -fr $(GOBIN_DIR)
+	$(Q)rm -fr $(GOBIN_DIR) $(HOST_DIR)
 
 .PHONY: help
 help:
