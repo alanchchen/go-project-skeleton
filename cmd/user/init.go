@@ -4,34 +4,31 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/getamis/sirius/rpc"
-	"github.com/oklog/run"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
 )
 
-func NewConnection() (*grpc.ClientConn, error) {
-	return grpc.Dial(APIEndpoint(), grpc.WithInsecure())
+func NewConnection(cfg *viper.Viper) (*grpc.ClientConn, error) {
+	return grpc.Dial(APIEndpoint(cfg), grpc.WithInsecure())
 }
 
 func NewClient(conn *grpc.ClientConn) user.ServiceClient {
 	return user.NewServiceClient(conn)
 }
 
-func NewTCPSocket() (net.Listener, error) {
-	return net.Listen("tcp", APIEndpoint())
+func NewTCPSocket(cfg *viper.Viper) (net.Listener, error) {
+	return net.Listen("tcp", APIEndpoint(cfg))
 }
 
-func APIEndpoint() string {
-	return fmt.Sprintf("%s:%d", viper.GetString("api.host"), viper.GetInt("api.port"))
+func APIEndpoint(cfg *viper.Viper) string {
+	return fmt.Sprintf("%s:%d", cfg.GetString("api.host"), cfg.GetInt("api.port"))
 }
 
-func NewRunGroup() *run.Group {
-	return &run.Group{}
-}
-
-func NewRPCServer() *rpc.Server {
-	return rpc.NewServer(rpc.APIs(user.NewService()))
+func NewRPCServer() *grpc.Server {
+	svc := user.NewService()
+	server := grpc.NewServer()
+	svc.Bind(server)
+	return server
 }

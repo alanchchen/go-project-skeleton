@@ -8,9 +8,9 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/dig"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
+	"github.com/alanchchen/go-project-skeleton/pkg/app"
 )
 
 func init() {
@@ -24,23 +24,19 @@ var addUserCommand = &cobra.Command{
 	Short: "adds an new user",
 	Long:  "adds an new user",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		container := dig.New()
+		runner := app.NewRunner()
+		if err := runner.BindCobraCommand(cmd, args...); err != nil {
+			return err
+		}
 
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		for _, initFn := range initializers {
-			if err := container.Provide(initFn); err != nil {
-				return err
-			}
-		}
-
-		// Invoke actors
-		return container.Invoke(func(client user.ServiceClient) error {
+		return runner.RunCustom(func(client user.ServiceClient, cfg *viper.Viper) error {
 			resp, err := client.AddUser(context.Background(), &user.AddUserRequest{
-				Name: viper.GetString("name"),
+				Name: cfg.GetString("name"),
 			})
 			if err != nil {
 				return err
@@ -54,6 +50,6 @@ var addUserCommand = &cobra.Command{
 			fmt.Println(string(rawData))
 
 			return nil
-		})
+		}, initializers...)
 	},
 }
