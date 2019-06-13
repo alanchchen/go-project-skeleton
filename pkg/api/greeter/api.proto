@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package greeter;
-option go_package = "github.com/alanchchen/go-project-skeleton/pkg/api/greeter;greeter";
+option go_package = "greeter";
 
 // The request message containing the user's name.
 message HelloRequest {
