@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
 	"github.com/alanchchen/go-project-skeleton/pkg/app"
@@ -20,17 +18,17 @@ func init() {
 	findUserCommand.Flags().Int64("id", -1, "the user id")
 }
 
-var findUserCommand = &cobra.Command{
+var findUserCommand = &app.Command{
 	Use:   "find",
 	Short: "finds an new user by ID or name",
 	Long:  "finds an new user by ID or name",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *app.Command, args []string) error {
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		return app.RunCustom(cmd, args, func(client user.ServiceClient, cfg *viper.Viper) error {
+		return app.RunCustom(cmd, args, func(client user.ServiceClient, cfg *app.Config) error {
 			var resp *user.Users
 			var err error
 

@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/user"
 	"github.com/alanchchen/go-project-skeleton/pkg/app"
@@ -19,17 +17,17 @@ func init() {
 	addUserCommand.Flags().String("name", "", "the user name")
 }
 
-var addUserCommand = &cobra.Command{
+var addUserCommand = &app.Command{
 	Use:   "add",
 	Short: "adds an new user",
 	Long:  "adds an new user",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *app.Command, args []string) error {
 		initializers := []interface{}{
 			NewConnection,
 			NewClient,
 		}
 
-		return app.RunCustom(cmd, args, func(client user.ServiceClient, cfg *viper.Viper) error {
+		return app.RunCustom(cmd, args, func(client user.ServiceClient, cfg *app.Config) error {
 			resp, err := client.AddUser(context.Background(), &user.AddUserRequest{
 				Name: cfg.GetString("name"),
 			})

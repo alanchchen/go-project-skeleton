@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
 	"github.com/alanchchen/go-project-skeleton/pkg/api/greeter"
@@ -19,12 +17,12 @@ func init() {
 	clientCmd.Flags().String("name", "", "Tell the server who you are")
 }
 
-var clientCmd = &cobra.Command{
+var clientCmd = &app.Command{
 	Use:   "client",
 	Short: "client is a greeter client",
 	Long:  "client is a greeter client",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return app.RunCustom(cmd, args, func(cfg EndpointConfig) error {
+	RunE: func(cmd *app.Command, args []string) error {
+		return app.RunCustom(cmd, args, func(cfg EndpointConfig, appCfg *app.Config) error {
 			conn, err := grpc.Dial(cfg.Endpoint(), grpc.WithInsecure())
 			if err != nil {
 				return err
@@ -33,7 +31,7 @@ var clientCmd = &cobra.Command{
 			client := greeter.NewServiceClient(conn)
 
 			resp, err := client.SayHello(context.Background(), &greeter.HelloRequest{
-				Name: viper.GetString("name"),
+				Name: appCfg.GetString("name"),
 			})
 			if err != nil {
 				return err
