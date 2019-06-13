@@ -22,6 +22,7 @@ GOBIN_DIR := $(BUILD_DIR)/bin
 HOST_DIR := $(BUILD_DIR)/host
 HOSTBIN_DIR := $(HOST_DIR)/bin
 GOTOOLSBIN_DIR := $(HOSTBIN_DIR)
+GOTOOLS_DIR := $(CURDIR)/tools
 TMP_DIR := $(BUILD_DIR)/tmp
 DIRS := \
 	$(GOBIN_DIR) \
@@ -34,8 +35,9 @@ HOST_OS := $(shell uname -s)
 # Define your docker repository
 DOCKER_REPOSITORY ?= quay.io/alan/$(notdir $(CURDIR))
 REV ?= $(shell git rev-parse --short HEAD 2> /dev/null)
+GOPATH ?= $(shell go env GOPATH)
 
-export PATH:=$(HOSTBIN_DIR):$(PATH)
+export PATH:=$(GOTOOLS_DIR):$(HOSTBIN_DIR):$(PATH)
 export REV
 
 define app-docker-image-name
@@ -74,19 +76,13 @@ define gen-grpc
 $(PROTOC) $(PROTOC_INCLUDES_DIR) --go_out=plugins=grpc:$(GOPATH)/src $(1)
 endef
 
-protoc-gen-go:
-	$(Q)go get github.com/golang/protobuf/protoc-gen-go@v1.2.0
-
 .PHONY: api-gen
-api-gen: $(PROTOC) protoc-gen-go
+api-gen: $(PROTOC) $(GOTOOLS_DIR)/protoc-gen-go
 	$(Q)for api in $(call find-subdir,pkg/api); do \
 		$(call gen-grpc,$(addprefix $(CURDIR)/,$$api/*.proto)); done
 
-mockgen:
-	$(Q)go get github.com/golang/mock/mockgen@v1.3.1
-
 .PHONY: mock-gen
-mock-gen: mockgen
+mock-gen: $(GOTOOLS_DIR)/mockgen
 	$(Q)go generate ./...
 
 dockers: $(addsuffix -docker,$(APPS))
