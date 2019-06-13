@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/golang/mock v1.3.1
-	github.com/golang/protobuf v1.2.0
+	github.com/golang/protobuf v1.3.1
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/joho/godotenv v1.3.0
 	github.com/oklog/run v1.0.0
