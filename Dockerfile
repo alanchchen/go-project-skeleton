@@ -8,8 +8,6 @@ RUN mkdir -p /src
 WORKDIR /src
 
 COPY go.mod .
-
-RUN go mod download
 COPY . .
 
 ARG APP
