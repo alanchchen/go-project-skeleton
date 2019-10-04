@@ -75,7 +75,7 @@ func (r *Runner) execute(runnable interface{}, initializers ...interface{}) erro
 	}
 
 	// Invoke actors
-	return container.Invoke(runnable)
+	return dig.RootCause(container.Invoke(runnable))
 }
 
 func (r *Runner) bindCobraCommand(app *cobra.Command, args []string) (err error) {
@@ -97,7 +97,7 @@ func (r *Runner) bindCobraCommand(app *cobra.Command, args []string) (err error)
 		cfg.AddConfigPath("/")
 	}
 
-	if err = bindFlags(app, cfg); err != nil {
+	if err = cfg.BindPFlags(app.Flags()); err != nil {
 		return err
 	}
 
@@ -176,20 +176,6 @@ func (r *Runner) bindContainer() error {
 		}
 
 		if err := container.Provide(getter, dig.Name(k)); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func bindFlags(cmd *cobra.Command, cfg *Config) error {
-	if err := cfg.BindPFlags(cmd.Flags()); err != nil {
-		return err
-	}
-
-	for _, subcmd := range cmd.Commands() {
-		if err := bindFlags(subcmd, cfg); err != nil {
 			return err
 		}
 	}
