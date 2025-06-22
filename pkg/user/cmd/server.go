@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -20,9 +21,10 @@ func init() {
 }
 
 var ServerCmd = &cobra.Command{
-	Use:   "server",
-	Short: "server is a user server",
-	Long:  "server is a user server",
+	Use:          "server",
+	Short:        "server is a user server",
+	Long:         "server is a user server",
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		host := viper.GetString("api.host")
 		port := viper.GetInt("api.port")
@@ -31,6 +33,7 @@ var ServerCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		defer l.Close()
 
 		server := grpc.NewServer()
 		userService := core.NewService(
@@ -42,12 +45,20 @@ var ServerCmd = &cobra.Command{
 		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
 		go func() {
-			<-signalChan
-			server.GracefulStop()
+			if sig := <-signalChan; sig != nil {
+				fmt.Println("user server received signal:", sig)
+				server.GracefulStop()
+			}
 		}()
 
 		fmt.Println("user server started at", fmt.Sprintf("%s:%d", host, port))
 
-		return server.Serve(l)
+		if err := server.Serve(l); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			return err
+		}
+
+		fmt.Println("user server stopped")
+
+		return nil
 	},
 }
