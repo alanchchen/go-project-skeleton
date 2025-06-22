@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package user.v1;
+option go_package = "github.com/alanchchen/go-project-skeleton/pkg/user/api";
+
+import "google/protobuf/empty.proto";
+
+message User {
+    int64 id = 1;
+    string name = 2;
+}
+
+message AddUserRequest {
+    string name = 1;
+}
+
+message FindUserByIdRequest {
+    int64 id = 1;
+}
+
+message FindUserByNameRequest {
+    string name = 1;
+}
+
+message Users {
+    repeated User users = 1;
+}
+
+service UserService {
+    rpc AddUser(AddUserRequest) returns (Users) {}
+    rpc FindUserById(FindUserByIdRequest) returns (Users) {}
+    rpc FindUserByName(FindUserByNameRequest) returns (Users) {}
+    rpc ListUsers(google.protobuf.Empty) returns (Users) {}
+}

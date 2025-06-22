@@ -15,37 +15,23 @@ else
   Q := @
 endif
 
-PHONY += all test clean docker docker-push dockers dockers-push
+PHONY += all test clean docker docker-push
 CURDIR := $(shell pwd)
 BUILD_DIR ?= $(CURDIR)/build
 GOBIN_DIR := $(BUILD_DIR)/bin
-HOST_DIR := $(BUILD_DIR)/host
-HOSTBIN_DIR := $(HOST_DIR)/bin
-GOTOOLSBIN_DIR := $(HOSTBIN_DIR)
-GOTOOLS_DIR := $(CURDIR)/tools
-TMP_DIR := $(BUILD_DIR)/tmp
 DIRS := \
-	$(GOBIN_DIR) \
-	$(HOST_DIR) \
-	$(HOSTBIN_DIR) \
-	$(TMP_DIR)
+	$(GOBIN_DIR)
 
 HOST_OS := $(shell uname -s)
 
 # Define your docker repository
-DOCKER_REPOSITORY ?= quay.io/alan/$(notdir $(CURDIR))
+DOCKER_REPOSITORY ?= ghcr.io/alanchchen/go-project-skeleton
+DOCKER_COMMAND ?= docker  # or podman
 REV ?= $(shell git rev-parse --short HEAD 2> /dev/null)
 GOPATH ?= $(shell go env GOPATH)
 
-export PATH:=$(GOTOOLS_DIR):$(HOSTBIN_DIR):$(PATH)
+export PATH:=$(GOTOOLS_DIR):$(PATH)
 export REV
-
-define app-docker-image-name
-$(if $(filter-out all,$(1)), \
-  $(DOCKER_REPOSITORY)-$(1):$(REV), \
-  $(DOCKER_REPOSITORY):$(REV)\
-)
-endef
 
 define find-subdir
 $(shell find $(1) -maxdepth 1 -mindepth 1 -type d -o -type l)
@@ -67,32 +53,11 @@ $(GOBIN_DIR)/%: $(GOBIN_DIR) FORCE
 	@echo "Done building."
 	@echo "Run \"$(subst $(CURDIR),.,$@)\" to launch $(notdir $@)."
 
-include $(wildcard build/*.mk)
-
-CODEGEN_DEPS := \
-	$(GOTOOLS_DIR)/mockgen \
-	$(GOTOOLS_DIR)/protoc-gen-go \
-	$(PROTOC)
-
-.PHONY: gen
-gen: $(CODEGEN_DEPS)
-	$(Q)go generate -x ./...
-
-dockers: $(addsuffix -docker,$(APPS))
-%-docker:
-	$(eval APP=$(subst -docker,,$@))
-	$(Q)docker build --build-arg APP=$(APP) -t $(call app-docker-image-name,$(APP)) .
-
 docker:
-	$(Q)docker build -t $(DOCKER_REPOSITORY):$(REV) .
-
-dockers-push: $(addsuffix -docker-push,$(APPS))
-%-docker-push:
-	$(eval APP=$(subst -docker,,$@))
-	$(Q)docker push $(call app-docker-image-name,$(APP))
+	$(Q)$(DOCKER_COMMAND) build -t $(DOCKER_REPOSITORY):$(REV) .
 
 docker-push:
-	$(Q)docker push $(DOCKER_REPOSITORY):$(REV)
+	$(Q)$(DOCKER_COMMAND) push $(DOCKER_REPOSITORY):$(REV)
 
 test:
 	$(Q)go test -v ./...
@@ -107,18 +72,9 @@ help:
 	@for app in $(APPS); do \
 		printf "* %s\n" $$app; done
 	@echo  ''
-	@echo  'Code generation targets:'
-	@echo  '  gen                         - Generate API code from .proto files and mocks'
-	@echo  ''
 	@echo  'Docker targets:'
-	@echo  '  dockers                     - Build docker images marked with [*]'
-	@for app in $(APPS); do \
-		printf "* %-20s        - Build %s\n" $$app-docker $(call app-docker-image-name,$$app); done
-	@echo  '  docker                      - Build single docker image which includes all executables'
+	@echo  '  docker                      - Build docker image which includes all executables'
 	@echo  ''
-	@echo  '  dockers-push                - Push docker images marked with [*]'
-	@for app in $(APPS); do \
-		printf "* %-20s        - Push %s\n" $$app-docker-push $(call app-docker-image-name,$$app); done
 	@echo  '  docker-push                 - Push $(DOCKER_REPOSITORY):$(REV)'
 	@echo  ''
 	@echo  'Test targets:'
